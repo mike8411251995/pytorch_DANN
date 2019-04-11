@@ -130,10 +130,10 @@ def main(args):
 
     # prepare the source data and target data
 
-    src_train_dataloader = utils.get_train_loader(params.source_domain)
-    src_test_dataloader = utils.get_test_loader(params.source_domain)
-    tgt_train_dataloader = utils.get_train_loader(params.target_domain)
-    tgt_test_dataloader = utils.get_test_loader(params.target_domain)
+    src_train_dataloader = utils.get_train_loader(params.source_domain, 'data/')
+    src_test_dataloader = utils.get_test_loader(params.source_domain, 'data/')
+    tgt_train_dataloader = utils.get_train_loader(params.target_domain, 'data/')
+    tgt_test_dataloader = utils.get_test_loader(params.target_domain, 'data/')
 
     if params.fig_mode is not None:
         print('Images from training on source domain:')

@@ -1,21 +1,3 @@
-import torchvision
-import torch
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
-
-from train import params
-from sklearn.manifold import TSNE
-
-
-import matplotlib.pyplot as plt
-plt.switch_backend('agg')
-
-import numpy as np
-import os, time
-from data import SynDig
-
-# From dataset.py
-
 import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader,Dataset
@@ -36,70 +18,84 @@ from PIL import Image
 from torchvision.transforms import Compose, Resize, RandomCrop, CenterCrop, RandomHorizontalFlip, ToTensor, Normalize
 import math
 
-def get_train_loader(name, root, scale=28, shuffle=True, style=None, attr=None):
+
+def LoadDataset(name, root, batch_size, split,shuffle=True, style=None, attr=None):
     if name == 'mnist':
-        return LoadMNIST(root+'mnist/', batch_size=params.batch_size, split='train', shuffle=shuffle, scale=scale)
+        if split == 'train':
+            return LoadMNIST(root+'mnist/', batch_size=batch_size, split='train', shuffle=shuffle, scale_32=True)
+        elif split=='test':
+            return LoadMNIST(root+'mnist/', batch_size=batch_size, split='test', shuffle=False, scale_32=True)
     elif name == 'usps':
-        return LoadUSPS(root+'usps/', batch_size=params.batch_size, split='train', shuffle=shuffle, scale=scale)
+        if split == 'train':
+            return LoadUSPS(root+'usps/', batch_size=batch_size, split='train', shuffle=shuffle, scale_32=True)
+        elif split=='test':
+            return LoadUSPS(root+'usps/', batch_size=batch_size, split='test', shuffle=False, scale_32=True)
     elif name == 'svhn':
-        return LoadSVHN(root+'svhn/', batch_size=params.batch_size, split='extra', shuffle=shuffle, scale=scale)
+        if split == 'train':
+            return LoadSVHN(root+'svhn/', batch_size=batch_size, split='extra', shuffle=shuffle)
+        elif split=='test':
+            return LoadSVHN(root+'svhn/', batch_size=batch_size, split='test', shuffle=False)
     elif name == 'mnistm':
-        return LoadMNISTM(root+'mnistm/', batch_size=params.batch_size, split='train', shuffle=shuffle, scale=scale)
+        if split == 'train':
+            return LoadMNISTM(root+'mnistm/', batch_size=batch_size, split='train', shuffle=shuffle, scale_32=True)
+        elif split=='test':
+            return LoadMNISTM(root+'mnistm/', batch_size=batch_size, split='test', shuffle=False, scale_32=True)
     # elif name == 'face':
     #     assert style != None
-    #     return LoadFace(root, style=style, split='train', batch_size=params.batch_size,  shuffle=shuffle)
-
-def get_test_loader(name, root, scale=28, shuffle=True, style=None, attr=None):
-    if name == 'mnist':
-        return LoadMNIST(root+'mnist/', batch_size=params.batch_size, split='test', shuffle=False, scale=scale)
-    elif name == 'usps':
-        return LoadUSPS(root+'usps/', batch_size=params.batch_size, split='test', shuffle=False, scale=scale)
-    elif name == 'svhn':
-        return LoadSVHN(root+'svhn/', batch_size=params.batch_size, split='test', shuffle=False, scale=scale)
-    elif name == 'mnistm':
-        return LoadMNISTM(root+'mnistm/', batch_size=params.batch_size, split='test', shuffle=False, scale=scale)
-    # elif name == 'face':
-    #     assert style != None
-    #     return LoadFace(root, style=style, split='test', batch_size=params.batch_size,  shuffle=shuffle)
+    #     if split == 'train':
+    #         return LoadFace(root, style=style, split='train', batch_size=batch_size,  shuffle=shuffle)
+    #     elif split=='test':
+    #         return LoadFace(root, style=style, split='test', batch_size=batch_size,  shuffle=shuffle)
 
 
-def LoadSVHN(data_root, batch_size=32, split='train', shuffle=True, scale=28):
+def LoadSVHN(data_root, batch_size=32, split='train', shuffle=True):
     if not os.path.exists(data_root):
         os.makedirs(data_root)
-
-    trans = transforms.Compose([transforms.Resize(size=[scale, scale]),transforms.ToTensor()])
-
     svhn_dataset = datasets.SVHN(data_root, split=split, download=True,
-                                   transform=trans)
+                                   transform=transforms.ToTensor())
     return DataLoader(svhn_dataset,batch_size=batch_size, shuffle=shuffle, drop_last=True)
 
-def LoadUSPS(data_root, batch_size=32, split='train', shuffle=True, scale=28):
+def LoadUSPS(data_root, batch_size=32, split='train', shuffle=True, scale_32 = False):
     if not os.path.exists(data_root):
         os.makedirs(data_root)
 
-    usps_dataset = USPS_2(root=data_root,train=(split=='train'),download=True,scale=scale)
+    usps_dataset = USPS_2(root=data_root,train=(split=='train'),download=True,scale_32=scale_32)
     return DataLoader(usps_dataset,batch_size=batch_size, shuffle=shuffle, drop_last=True)
 
-def LoadMNIST(data_root, batch_size=32, split='train', shuffle=True, scale=28):
+def LoadMNIST(data_root, batch_size=32, split='train', shuffle=True, scale_32 = False):
     if not os.path.exists(data_root):
         os.makedirs(data_root)
 
-    trans = transforms.Compose([transforms.Resize(size=[scale, scale]),transforms.ToTensor()])
-    
+    if scale_32:
+        trans = transforms.Compose([transforms.Resize(size=[32, 32]),transforms.ToTensor()])
+    else:
+        trans = transforms.ToTensor()
+
     mnist_dataset = datasets.MNIST(data_root, train=(split=='train'), download=True,
                                    transform=trans)
     return DataLoader(mnist_dataset,batch_size=batch_size,shuffle=shuffle, drop_last=True)
 
-def LoadMNISTM(data_root, batch_size=32, split='train', shuffle=True, scale=28):
+def LoadMNISTM(data_root, batch_size=32, split='train', shuffle=True, scale_32 = False):
     if not os.path.exists(data_root):
         os.makedirs(data_root)
 
-    trans = transforms.Compose([transforms.Resize(size=[scale, scale]),transforms.ToTensor()])
+    if scale_32:
+        trans = transforms.Compose([transforms.Resize(size=[32, 32]),transforms.ToTensor()])
+    else:
+        trans = transforms.ToTensor()
 
     mnist_dataset = MNISTM(data_root, train=(split=='train'), download=True,
                                    transform=trans)
     return DataLoader(mnist_dataset,batch_size=batch_size,shuffle=shuffle, drop_last=True)
 
+
+def LoadFace(data_root, batch_size=32, split='train', style='photo', attr = None,
+               shuffle=True, load_first_n = None):
+
+    data_root = data_root+'face.h5'
+    key = '/'.join(['CelebA',split,style])
+    celeba_dataset = Face(data_root,key,load_first_n)
+    return DataLoader(celeba_dataset,batch_size=batch_size,shuffle=shuffle,drop_last=True)
 
 
 ### USPS Reference : https://github.com/corenel/torchzoo/blob/master/torchzoo/datasets/usps.py
@@ -118,12 +114,12 @@ class USPS(Dataset):
 
     url = "https://github.com/mingyuliutw/CoGAN/blob/master/cogan_pytorch/data/uspssample/usps_28x28.pkl"
     
-    def __init__(self, root, train=True, scale=28, download=False):
+    def __init__(self, root, train=True, scale_32=False, download=False):
         """Init USPS dataset."""
         # init params
         self.root = os.path.expanduser(root)
 
-        if scale == 32:
+        if scale_32:
             self.filename = "usps_32x32.pkl"
         else:
             self.filename = "usps_28x28.pkl"
@@ -211,6 +207,21 @@ class USPS(Dataset):
             self.dataset_size = labels.shape[0]
         return images, labels
 
+class Face(Dataset):
+    def __init__(self, root, key, load_first_n = None):
+
+        with h5py.File(root,'r') as f:
+            data = f[key][()]
+            if load_first_n:
+                data = data[:load_first_n]
+        self.imgs = (data/255.0)*2 -1
+
+    def __getitem__(self, index):
+        return self.imgs[index]
+
+    def __len__(self):
+        return len(self.imgs)
+
 
 class dataset_unpair(Dataset):
   def __init__(self, opts):
@@ -266,6 +277,53 @@ class dataset_unpair(Dataset):
     return self.dataset_size
 
 
+class dataset_shoes(Dataset):
+  def __init__(self, opts, phase='train', input_dim=3):
+    self.dataroot = opts.dataroot
+    images = os.listdir(os.path.join(self.dataroot, phase))
+    self.img_A = [os.path.join(self.dataroot, phase, x) for x in images]
+    self.size = len(self.img_A)
+    self.input_dim = input_dim
+    self.img_B = [os.path.join(self.dataroot, phase, x) for x in images]
+    self.pair = opts.pair
+    if self.pair == 'False':
+        random.shuffle(self.img_B)
+
+    # setup image transformation
+    transforms = [Resize((opts.crop_size, opts.crop_size*2), Image.BICUBIC)]
+    #transforms.append(CenterCrop(opts.crop_size))
+    transforms.append(ToTensor())
+    transforms.append(Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]))
+    self.transforms = Compose(transforms)
+    print('edge2shoes: %d images'%(self.size))
+    return
+
+  def __getitem__(self, index):
+    if self.pair == 'False':
+        data_A = self.load_img(img_name=self.img_A[random.randint(0, self.size - 1)], domain='A', input_dim=self.input_dim)
+        data_B = self.load_img(img_name=self.img_B[random.randint(0, self.size - 1)], domain='B', input_dim=self.input_dim)
+    elif self.pair == 'True':
+        data_A = self.load_img(img_name=self.img_A[index], domain='A', input_dim=self.input_dim)
+        data_B = self.load_img(img_name=self.img_B[index], domain='B', input_dim=self.input_dim)
+
+    return data_A, data_B
+
+  def load_img(self, img_name, domain, input_dim):
+    img = Image.open(img_name).convert('RGB')
+    img = self.transforms(img)
+    if input_dim == 1:
+        img = img[0, ...] * 0.299 + img[1, ...] * 0.587 + img[2, ...] * 0.114
+        img = img.unsqueeze(0)
+    if domain == 'A':
+        img_out = img[:,:,:64]
+    else:
+        img_out = img[:,:,64:]
+    return img_out
+
+  def __len__(self):
+    return self.size
+
+
 class DatasetParams(object):
     "Class variables defined."
     num_channels = 1
@@ -309,12 +367,12 @@ class USPS_2(Dataset):
     params = USPSParams()
 
     def __init__(self, root, train=True, target_transform=None,
-            download=False,scale=28):
+            download=False,scale_32=False):
 
         transform = []
         
 
-        transform += [transforms.Resize(size=[scale, scale]),transforms.ToTensor()]
+        transform += [transforms.Resize(size=[32, 32]),transforms.ToTensor()]
 
         self.root = root
         self.train = train
@@ -521,239 +579,37 @@ class MNISTM(Dataset):
 
         print('Done!')
 
+class CelebADataset(Dataset):
+    """docstring for MyDataset"""
+    def __init__(self, mode, train_filepath, test_filepath, train_csvpath, test_csvpath):
+        #self.train_data = read_image(train_filepath)
+        #self.test_data = read_image(test_filepath)     
+        self.mode = mode
 
-# def get_train_loader(dataset):
-#     """
-#     Get train dataloader of source domain or target domain
-#     :return: dataloader
-#     """
-#     if dataset == 'MNIST':
-#         transform = transforms.Compose([
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
+        if self.mode == 'VAE_train':
+            self.images = read_image(train_filepath)
+        if self.mode == 'VAE_test':
+            self.images = read_image(test_filepath)
+        if self.mode == 'GAN':
+            self.images = read_image_gan([train_filepath, test_filepath], True)
 
-#         data = datasets.MNIST(root= params.mnist_path, train= True, transform= transform,
-#                               download= True)
+        if self.mode == 'ACGAN':
+            self.images = read_image_gan([train_filepath, test_filepath], False)
+            self.train_attr = pd.read_csv(train_csvpath)['Smiling']
+            self.test_attr = pd.read_csv(test_csvpath)['Smiling']
+            self.attr = pd.concat((self.train_attr, self.test_attr), ignore_index=True)
+            #self.attr = torch.FloatTensor(self.attr)
+            self.attr = torch.FloatTensor(self.attr).view(-1, 1, 1, 1)
 
-#         dataloader = DataLoader(dataset= data, batch_size= params.batch_size, shuffle= True)
+        self.images = torch.FloatTensor(self.images)
 
+    def __getitem__(self, index):
+        data = self.images[index]
+        if self.mode == 'ACGAN':
+            label = self.attr[index]
+            return data, label
 
-#     elif dataset == 'MNIST_M':
-#         transform = transforms.Compose([
-#             transforms.RandomCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
+        else: return data, data
 
-#         data = datasets.ImageFolder(root=params.mnistm_path + '/train', transform= transform)
-
-#         dataloader = DataLoader(dataset = data, batch_size= params.batch_size, shuffle= True)
-
-#     elif dataset == 'SVHN':
-#         transform = transforms.Compose([
-#             transforms.RandomCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean=params.dataset_mean, std=params.dataset_std)
-#         ])
-
-#         data1 = datasets.SVHN(root=params.svhn_path, split='train', transform=transform, download=True)
-#         data2 = datasets.SVHN(root= params.svhn_path, split= 'extra', transform = transform, download= True)
-
-#         data = torch.utils.data.ConcatDataset((data1, data2))
-
-#         dataloader = DataLoader(dataset=data, batch_size=params.batch_size, shuffle=True)
-#     elif dataset == 'SynDig':
-#         transform = transforms.Compose([
-#             transforms.RandomCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
-
-#         data = SynDig.SynDig(root= params.syndig_path, split= 'train', transform= transform, download= False)
-
-#         dataloader = DataLoader(dataset = data, batch_size= params.batch_size, shuffle= True)
-
-
-#     else:
-#         raise Exception('There is no dataset named {}'.format(str(dataset)))
-
-#     return dataloader
-
-
-
-# def get_test_loader(dataset):
-#     """
-#     Get test dataloader of source domain or target domain
-#     :return: dataloader
-#     """
-#     if dataset == 'MNIST':
-#         transform = transforms.Compose([
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
-
-#         data = datasets.MNIST(root= params.mnist_path, train= False, transform= transform,
-#                               download= True)
-
-#         dataloader = DataLoader(dataset= data, batch_size= 1, shuffle= False)
-#     elif dataset == 'MNIST_M':
-#         transform = transforms.Compose([
-#             # transforms.RandomCrop((28)),
-#             transforms.CenterCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
-
-#         data = datasets.ImageFolder(root=params.mnistm_path + '/test', transform= transform)
-
-#         dataloader = DataLoader(dataset = data, batch_size= 1, shuffle= False)
-#     elif dataset == 'SVHN':
-#         transform = transforms.Compose([
-#             transforms.CenterCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std = params.dataset_std)
-#         ])
-
-#         data = datasets.SVHN(root= params.svhn_path, split= 'test', transform = transform, download= True)
-
-#         dataloader = DataLoader(dataset = data, batch_size= 1, shuffle= False)
-#     elif dataset == 'SynDig':
-#         transform = transforms.Compose([
-#             transforms.CenterCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean=params.dataset_mean, std=params.dataset_std)
-#         ])
-
-#         data = SynDig.SynDig(root= params.syndig_path, split= 'test', transform= transform, download= False)
-
-#         dataloader = DataLoader(dataset= data, batch_size= 1, shuffle= False)
-#     else:
-#         raise Exception('There is no dataset named {}'.format(str(dataset)))
-
-#     return dataloader
-
-
-
-def optimizer_scheduler(optimizer, p):
-    """
-    Adjust the learning rate of optimizer
-    :param optimizer: optimizer for updating parameters
-    :param p: a variable for adjusting learning rate
-    :return: optimizer
-    """
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = 0.01 / (1. + 10 * p) ** 0.75
-
-    return optimizer
-
-
-
-def displayImages(dataloader, length=8, imgName=None):
-    """
-    Randomly sample some images and display
-    :param dataloader: maybe trainloader or testloader
-    :param length: number of images to be displayed
-    :param imgName: the name of saving image
-    :return:
-    """
-    if params.fig_mode is None:
-        return
-
-    # randomly sample some images.
-    dataiter = iter(dataloader)
-    images, labels = dataiter.next()
-
-    # process images so they can be displayed.
-    images = images[:length]
-
-    images = torchvision.utils.make_grid(images).numpy()
-    images = images/2 + 0.5
-    images = np.transpose(images, (1, 2, 0))
-
-
-    if params.fig_mode == 'display':
-
-        plt.imshow(images)
-        plt.show()
-
-    if params.fig_mode == 'save':
-        # Check if folder exist, otherwise need to create it.
-        folder = os.path.abspath(params.save_dir)
-
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        if imgName is None:
-            imgName = 'displayImages' + str(int(time.time()))
-
-
-        # Check extension in case.
-        if not (imgName.endswith('.jpg') or imgName.endswith('.png') or imgName.endswith('.jpeg')):
-            imgName = os.path.join(folder, imgName + '.jpg')
-
-        plt.imsave(imgName, images)
-        plt.close()
-
-    # print labels
-    print(' '.join('%5s' % labels[j].item() for j in range(length)))
-
-
-
-
-def plot_embedding(X, y, d, title=None, imgName=None):
-    """
-    Plot an embedding X with the class label y colored by the domain d.
-    :param X: embedding
-    :param y: label
-    :param d: domain
-    :param title: title on the figure
-    :param imgName: the name of saving image
-    :return:
-    """
-    if params.fig_mode is None:
-        return
-
-    # normalization
-    x_min, x_max = np.min(X, 0), np.max(X, 0)
-    X = (X - x_min) / (x_max - x_min)
-
-    # Plot colors numbers
-    plt.figure(figsize=(10,10))
-    ax = plt.subplot(111)
-
-    for i in range(X.shape[0]):
-        # plot colored number
-        plt.text(X[i, 0], X[i, 1], str(y[i]),
-                 color=plt.cm.bwr(d[i]/1.),
-                 fontdict={'weight': 'bold', 'size': 9})
-
-    plt.xticks([]), plt.yticks([])
-
-    # If title is not given, we assign training_mode to the title.
-    if title is not None:
-        plt.title(title)
-    else:
-        plt.title(params.training_mode)
-
-    if params.fig_mode == 'display':
-        # Directly display if no folder provided.
-        plt.show()
-
-    if params.fig_mode == 'save':
-        # Check if folder exist, otherwise need to create it.
-        folder = os.path.abspath(params.save_dir)
-
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        if imgName is None:
-            imgName = 'plot_embedding' + str(int(time.time()))
-
-        # Check extension in case.
-        if not (imgName.endswith('.jpg') or imgName.endswith('.png') or imgName.endswith('.jpeg')):
-            imgName = os.path.join(folder, imgName + '.jpg')
-
-        print('Saving ' + imgName + ' ...')
-        plt.savefig(imgName)
-        plt.close()
+    def __len__(self):
+        return len(self.images)

@@ -1,5 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
-/MNIST
-/MNIST_M
-/SVHN
+/face_data
+/mnistm
+/svhn
+/usps
+/mnist
 /SynthDigits

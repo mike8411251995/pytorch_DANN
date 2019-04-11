@@ -1,0 +1,10 @@
+{
+    "files.watcherExclude": {
+        "**/data/face_data/**": true,
+        "**/data/mnistm/**": true,
+        "**/data/svhn/**": true,
+        "**/data/usps/**": true,
+        "**/data/mnist/**": true,
+        "**/data/SynthDigits/**": true
+    }
+}
