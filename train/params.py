@@ -40,12 +40,15 @@ save_dir = './experiment'
 
 extractor_dict = {'usps_mnistm': models.SVHN_Extractor(),
                   'mnistm_svhn': models.SVHN_Extractor(),
-                  'svhn_usps': models.SVHN_Extractor()}
+                  'svhn_usps': models.SVHN_Extractor(),
+                  'svhn_mnistm': models.SVHN_Extractor()}
 
 class_dict = {'usps_mnistm': models.SVHN_Class_classifier(),
               'mnistm_svhn': models.SVHN_Class_classifier(),
-              'svhn_usps': models.SVHN_Class_classifier()}
+              'svhn_usps': models.SVHN_Class_classifier(),
+              'svhn_mnistm': models.SVHN_Class_classifier()}
 
 domain_dict = {'usps_mnistm': models.SVHN_Domain_classifier(),
                'mnistm_svhn': models.SVHN_Domain_classifier(),
-               'svhn_usps': models.SVHN_Domain_classifier()}
+               'svhn_usps': models.SVHN_Domain_classifier(),
+               'svhn_mnistm': models.SVHN_Domain_classifier()}
