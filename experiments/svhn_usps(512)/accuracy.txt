@@ -1,0 +1,4 @@
+Source Accuracy: 23206/26032 (89.1441%)
+Target Accuracy: 1117/2007 (55.6552%)
+Domain Accuracy: 16619/28039 (59.2710%)
+
