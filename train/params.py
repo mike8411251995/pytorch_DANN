@@ -9,7 +9,7 @@ use_gpu = True
 dataset_mean = (0.5, 0.5, 0.5)
 dataset_std = (0.5, 0.5, 0.5)
 
-batch_size = 512
+batch_size = 128
 epochs = 1000
 gamma = 10
 theta = 1
