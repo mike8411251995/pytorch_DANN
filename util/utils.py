@@ -45,9 +45,6 @@ def get_train_loader(name, root, scale=28, shuffle=True, style=None, attr=None):
         return LoadSVHN(root+'svhn/', batch_size=params.batch_size, split='extra', shuffle=shuffle, scale=scale)
     elif name == 'mnistm':
         return LoadMNISTM(root+'mnistm/', batch_size=params.batch_size, split='train', shuffle=shuffle, scale=scale)
-    # elif name == 'face':
-    #     assert style != None
-    #     return LoadFace(root, style=style, split='train', batch_size=params.batch_size,  shuffle=shuffle)
 
 def get_test_loader(name, root, scale=28, shuffle=True, style=None, attr=None):
     if name == 'mnist':
@@ -58,12 +55,8 @@ def get_test_loader(name, root, scale=28, shuffle=True, style=None, attr=None):
         return LoadSVHN(root+'svhn/', batch_size=params.batch_size, split='test', shuffle=False, scale=scale)
     elif name == 'mnistm':
         return LoadMNISTM(root+'mnistm/', batch_size=params.batch_size, split='test', shuffle=False, scale=scale)
-    # elif name == 'face':
-    #     assert style != None
-    #     return LoadFace(root, style=style, split='test', batch_size=params.batch_size,  shuffle=shuffle)
 
-
-def LoadSVHN(data_root, batch_size=32, split='train', shuffle=True, scale=28):
+def LoadSVHN(data_root, batch_size, split='train', shuffle=True, scale=28):
     if not os.path.exists(data_root):
         os.makedirs(data_root)
 
@@ -73,14 +66,14 @@ def LoadSVHN(data_root, batch_size=32, split='train', shuffle=True, scale=28):
                                    transform=trans)
     return DataLoader(svhn_dataset,batch_size=batch_size, shuffle=shuffle, drop_last=True)
 
-def LoadUSPS(data_root, batch_size=32, split='train', shuffle=True, scale=28):
+def LoadUSPS(data_root, batch_size, split='train', shuffle=True, scale=28):
     if not os.path.exists(data_root):
         os.makedirs(data_root)
 
     usps_dataset = USPS_2(root=data_root,train=(split=='train'),download=True,scale=scale)
     return DataLoader(usps_dataset,batch_size=batch_size, shuffle=shuffle, drop_last=True)
 
-def LoadMNIST(data_root, batch_size=32, split='train', shuffle=True, scale=28):
+def LoadMNIST(data_root, batch_size, split='train', shuffle=True, scale=28):
     if not os.path.exists(data_root):
         os.makedirs(data_root)
 
@@ -90,7 +83,7 @@ def LoadMNIST(data_root, batch_size=32, split='train', shuffle=True, scale=28):
                                    transform=trans)
     return DataLoader(mnist_dataset,batch_size=batch_size,shuffle=shuffle, drop_last=True)
 
-def LoadMNISTM(data_root, batch_size=32, split='train', shuffle=True, scale=28):
+def LoadMNISTM(data_root, batch_size, split='train', shuffle=True, scale=28):
     if not os.path.exists(data_root):
         os.makedirs(data_root)
 
@@ -99,8 +92,6 @@ def LoadMNISTM(data_root, batch_size=32, split='train', shuffle=True, scale=28):
     mnist_dataset = MNISTM(data_root, train=(split=='train'), download=True,
                                    transform=trans)
     return DataLoader(mnist_dataset,batch_size=batch_size,shuffle=shuffle, drop_last=True)
-
-
 
 ### USPS Reference : https://github.com/corenel/torchzoo/blob/master/torchzoo/datasets/usps.py
 class USPS(Dataset):
@@ -211,61 +202,6 @@ class USPS(Dataset):
             self.dataset_size = labels.shape[0]
         return images, labels
 
-
-class dataset_unpair(Dataset):
-  def __init__(self, opts):
-    self.dataroot = opts.dataroot
-
-    # A
-    images_A = os.listdir(os.path.join(self.dataroot, opts.phase + 'A'))
-    self.A = [os.path.join(self.dataroot, opts.phase + 'A', x) for x in images_A]
-
-    # B
-    images_B = os.listdir(os.path.join(self.dataroot, opts.phase + 'B'))
-    self.B = [os.path.join(self.dataroot, opts.phase + 'B', x) for x in images_B]
-
-    self.A_size = len(self.A)
-    self.B_size = len(self.B)
-    self.dataset_size = max(self.A_size, self.B_size)
-    self.input_dim_A = opts.input_dim_a
-    self.input_dim_B = opts.input_dim_b
-
-    # setup image transformation
-    transforms = [Resize((opts.resize_size, opts.resize_size), Image.BICUBIC)]
-    if opts.phase == 'train':
-      transforms.append(RandomCrop(opts.crop_size))
-    else:
-      transforms.append(CenterCrop(opts.crop_size))
-    if not opts.no_flip:
-      transforms.append(RandomHorizontalFlip())
-    transforms.append(ToTensor())
-    transforms.append(Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]))
-    # transforms.append(Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
-    self.transforms = Compose(transforms)
-    print('A: %d, B: %d images'%(self.A_size, self.B_size))
-    return
-
-  def __getitem__(self, index):
-    if self.dataset_size == self.A_size:
-      data_A = self.load_img(self.A[index], self.input_dim_A)
-      data_B = self.load_img(self.B[random.randint(0, self.B_size - 1)], self.input_dim_B)
-    else:
-      data_A = self.load_img(self.A[random.randint(0, self.A_size - 1)], self.input_dim_A)
-      data_B = self.load_img(self.B[index], self.input_dim_B)
-    return data_A, data_B
-
-  def load_img(self, img_name, input_dim):
-    img = Image.open(img_name).convert('RGB')
-    img = self.transforms(img)
-    if input_dim == 1:
-      img = img[0, ...] * 0.299 + img[1, ...] * 0.587 + img[2, ...] * 0.114
-      img = img.unsqueeze(0)
-    return img
-
-  def __len__(self):
-    return self.dataset_size
-
-
 class DatasetParams(object):
     "Class variables defined."
     num_channels = 1
@@ -287,9 +223,6 @@ class USPSParams(DatasetParams):
     std = 0.5
     num_cls      = 10
     
-    
-
-
 class USPS_2(Dataset):
 
     """USPS handwritten digits.
@@ -373,8 +306,7 @@ class USPS_2(Dataset):
 
     def __len__(self):
         return len(self.targets)
-
-
+        
 class MNISTM(Dataset):
     """`MNIST-M Dataset."""
 
@@ -521,120 +453,6 @@ class MNISTM(Dataset):
 
         print('Done!')
 
-
-# def get_train_loader(dataset):
-#     """
-#     Get train dataloader of source domain or target domain
-#     :return: dataloader
-#     """
-#     if dataset == 'MNIST':
-#         transform = transforms.Compose([
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
-
-#         data = datasets.MNIST(root= params.mnist_path, train= True, transform= transform,
-#                               download= True)
-
-#         dataloader = DataLoader(dataset= data, batch_size= params.batch_size, shuffle= True)
-
-
-#     elif dataset == 'MNIST_M':
-#         transform = transforms.Compose([
-#             transforms.RandomCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
-
-#         data = datasets.ImageFolder(root=params.mnistm_path + '/train', transform= transform)
-
-#         dataloader = DataLoader(dataset = data, batch_size= params.batch_size, shuffle= True)
-
-#     elif dataset == 'SVHN':
-#         transform = transforms.Compose([
-#             transforms.RandomCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean=params.dataset_mean, std=params.dataset_std)
-#         ])
-
-#         data1 = datasets.SVHN(root=params.svhn_path, split='train', transform=transform, download=True)
-#         data2 = datasets.SVHN(root= params.svhn_path, split= 'extra', transform = transform, download= True)
-
-#         data = torch.utils.data.ConcatDataset((data1, data2))
-
-#         dataloader = DataLoader(dataset=data, batch_size=params.batch_size, shuffle=True)
-#     elif dataset == 'SynDig':
-#         transform = transforms.Compose([
-#             transforms.RandomCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
-
-#         data = SynDig.SynDig(root= params.syndig_path, split= 'train', transform= transform, download= False)
-
-#         dataloader = DataLoader(dataset = data, batch_size= params.batch_size, shuffle= True)
-
-
-#     else:
-#         raise Exception('There is no dataset named {}'.format(str(dataset)))
-
-#     return dataloader
-
-
-
-# def get_test_loader(dataset):
-#     """
-#     Get test dataloader of source domain or target domain
-#     :return: dataloader
-#     """
-#     if dataset == 'MNIST':
-#         transform = transforms.Compose([
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
-
-#         data = datasets.MNIST(root= params.mnist_path, train= False, transform= transform,
-#                               download= True)
-
-#         dataloader = DataLoader(dataset= data, batch_size= 1, shuffle= False)
-#     elif dataset == 'MNIST_M':
-#         transform = transforms.Compose([
-#             # transforms.RandomCrop((28)),
-#             transforms.CenterCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std= params.dataset_std)
-#         ])
-
-#         data = datasets.ImageFolder(root=params.mnistm_path + '/test', transform= transform)
-
-#         dataloader = DataLoader(dataset = data, batch_size= 1, shuffle= False)
-#     elif dataset == 'SVHN':
-#         transform = transforms.Compose([
-#             transforms.CenterCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean= params.dataset_mean, std = params.dataset_std)
-#         ])
-
-#         data = datasets.SVHN(root= params.svhn_path, split= 'test', transform = transform, download= True)
-
-#         dataloader = DataLoader(dataset = data, batch_size= 1, shuffle= False)
-#     elif dataset == 'SynDig':
-#         transform = transforms.Compose([
-#             transforms.CenterCrop((28)),
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean=params.dataset_mean, std=params.dataset_std)
-#         ])
-
-#         data = SynDig.SynDig(root= params.syndig_path, split= 'test', transform= transform, download= False)
-
-#         dataloader = DataLoader(dataset= data, batch_size= 1, shuffle= False)
-#     else:
-#         raise Exception('There is no dataset named {}'.format(str(dataset)))
-
-#     return dataloader
-
-
-
 def optimizer_scheduler(optimizer, p):
     """
     Adjust the learning rate of optimizer
@@ -646,8 +464,6 @@ def optimizer_scheduler(optimizer, p):
         param_group['lr'] = 0.01 / (1. + 10 * p) ** 0.75
 
     return optimizer
-
-
 
 def displayImages(dataloader, length=8, imgName=None):
     """
@@ -697,9 +513,6 @@ def displayImages(dataloader, length=8, imgName=None):
 
     # print labels
     print(' '.join('%5s' % labels[j].item() for j in range(length)))
-
-
-
 
 def plot_embedding(X, y, d, title=None, imgName=None):
     """
